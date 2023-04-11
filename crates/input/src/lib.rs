@@ -1,9 +1,13 @@
+pub use ironrdp_pdu::input::fast_path;
+pub use ironrdp_pdu::input::mouse;
+pub use ironrdp_pdu::input::MousePdu;
+
 use bitvec::array::BitArray;
 use bitvec::BitArr;
 use ironrdp_pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
 use ironrdp_pdu::input::mouse::PointerFlags;
 use ironrdp_pdu::input::mouse_x::PointerXFlags;
-use ironrdp_pdu::input::{MousePdu, MouseXPdu};
+use ironrdp_pdu::input::MouseXPdu;
 use smallvec::SmallVec;
 
 // TODO: unicode keyboard event support

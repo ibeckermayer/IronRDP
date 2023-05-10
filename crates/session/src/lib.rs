@@ -12,7 +12,9 @@ mod framed;
 
 use ironrdp_pdu::gcc;
 
-pub use crate::active_session::{ActiveStageOutput, ActiveStageProcessor, GfxHandler};
+pub use crate::active_session::{
+    process_header, ActiveStageOutput, ActiveStageProcessor, ConnectionSequenceResult, DesktopSize, GfxHandler,
+};
 pub use crate::errors::RdpError;
 pub use crate::framed::{ErasedWriter, FramedReader};
 
@@ -25,7 +27,7 @@ pub struct GraphicsConfig {
     pub capabilities: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct InputConfig {
     pub credentials: sspi::AuthIdentity,
     pub security_protocol: ironrdp_pdu::SecurityProtocol,

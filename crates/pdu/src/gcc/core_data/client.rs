@@ -432,11 +432,12 @@ pub enum SecureAccessSequence {
     Del = 0xAA03,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive, Default)]
 pub enum KeyboardType {
     IbmPcXt = 1,
     OlivettiIco = 2,
     IbmPcAt = 3,
+    #[default]
     IbmEnhanced = 4,
     Nokia1050 = 5,
     Nokia9140 = 6,

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test;
 
+use log::info;
 use std::io::{self, Write};
 
 use bit_field::BitField;
@@ -21,7 +22,7 @@ use crate::{per, PduBufferParsing, PduParsing};
 pub struct FastPathHeader {
     pub flags: EncryptionFlags,
     pub data_length: usize,
-    forced_long_length: bool,
+    pub forced_long_length: bool, // TODO(isaiah): need not be pub once header is removed from fastpath::Processor.process
 }
 
 impl FastPathHeader {
@@ -123,6 +124,7 @@ impl<'a> PduBufferParsing<'a> for FastPathUpdatePdu<'a> {
         };
 
         let data_length = usize::from(buffer.read_u16::<LittleEndian>()?);
+        info!("update_code = {:?}", update_code); //todo(isaiah): delete
         if buffer.len() < data_length {
             return Err(FastPathError::InvalidDataLength {
                 expected: data_length,

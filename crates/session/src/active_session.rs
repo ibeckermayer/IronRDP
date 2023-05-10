@@ -1,14 +1,14 @@
 mod codecs;
-mod fast_path;
-mod x224;
+pub mod fast_path;
+pub mod x224;
 
 use bytes::{BufMut as _, Bytes, BytesMut};
-use ironrdp_pdu::fast_path::FastPathError;
+use ironrdp_pdu::fast_path::{FastPathError, FastPathHeader};
 use ironrdp_pdu::geometry::Rectangle;
-use ironrdp_pdu::{PduHeader, PduParsing as _};
+use ironrdp_pdu::{DataHeader, PduHeader, PduParsing as _};
 
 pub use self::x224::GfxHandler;
-use crate::connection_sequence::ConnectionSequenceResult;
+pub use crate::connection_sequence::{ConnectionSequenceResult, DesktopSize};
 use crate::image::DecodedImage;
 use crate::{utils, InputConfig, RdpError};
 
@@ -61,39 +61,45 @@ impl ActiveStageProcessor {
     }
 
     pub fn process(&mut self, image: &mut DecodedImage, frame: Bytes) -> Result<Vec<ActiveStageOutput>, RdpError> {
-        let mut graphics_update_region = None;
-
-        let output = match PduHeader::from_buffer(&frame[..]).map_err(RdpError::from) {
-            Ok(PduHeader::X224(_header)) => match self.x224_processor.process(frame) {
-                Ok(output) => output,
-                Err(RdpError::UnexpectedDisconnection(message)) => {
-                    warn!("User-Initiated disconnection on Server: {}", message);
-                    return Ok(vec![ActiveStageOutput::Terminate]);
-                }
-                Err(RdpError::UnexpectedChannel(channel_id)) => {
-                    warn!("Got message on a channel with {} ID", channel_id);
-                    return Ok(vec![ActiveStageOutput::Terminate]);
-                }
-                Err(err) => {
-                    return Err(err);
-                }
+        match process_header(&frame) {
+            Ok(pdu_header) => match pdu_header {
+                PduHeader::X224(_header) => self.process_x224_frame(_header, frame),
+                PduHeader::FastPath(header) => self.process_fast_path_frame(header, frame, image),
             },
-            Ok(PduHeader::FastPath(header)) => {
-                let mut output_writer = BytesMut::new().writer();
-                graphics_update_region = self.fast_path_processor.process(
-                    image,
-                    &header,
-                    &frame[header.buffer_length()..],
-                    &mut output_writer,
-                )?;
-                output_writer.into_inner()
-            }
             Err(RdpError::FastPath(FastPathError::NullLength { bytes_read: _ })) => {
                 warn!("Received null-length Fast-Path packet, dropping it");
-                BytesMut::new()
+                Ok(vec![])
             }
-            Err(e) => return Err(e),
-        };
+            Err(e) => Err(e),
+        }
+    }
+
+    fn process_x224_frame(&mut self, _header: DataHeader, frame: Bytes) -> Result<Vec<ActiveStageOutput>, RdpError> {
+        match self.x224_processor.process(frame) {
+            Ok(output) => Ok(vec![ActiveStageOutput::ResponseFrame(output)]),
+            Err(RdpError::UnexpectedDisconnection(message)) => {
+                warn!("User-Initiated disconnection on Server: {}", message);
+                Ok(vec![ActiveStageOutput::Terminate])
+            }
+            Err(RdpError::UnexpectedChannel(channel_id)) => {
+                warn!("Got message on a channel with {} ID", channel_id);
+                Ok(vec![ActiveStageOutput::Terminate])
+            }
+            Err(err) => Err(err),
+        }
+    }
+
+    fn process_fast_path_frame(
+        &mut self,
+        header: FastPathHeader,
+        frame: Bytes,
+        image: &mut DecodedImage,
+    ) -> Result<Vec<ActiveStageOutput>, RdpError> {
+        let mut output_writer = BytesMut::new().writer();
+        let graphics_update_region =
+            self.fast_path_processor
+                .process(image, &header, &frame[header.buffer_length()..], &mut output_writer)?;
+        let output = output_writer.into_inner();
 
         let mut stage_outputs = Vec::new();
 
@@ -107,6 +113,10 @@ impl ActiveStageProcessor {
 
         Ok(stage_outputs)
     }
+}
+
+pub fn process_header(frame: &Bytes) -> Result<PduHeader, RdpError> {
+    PduHeader::from_buffer(&frame[..]).map_err(RdpError::from)
 }
 
 pub enum ActiveStageOutput {

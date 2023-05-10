@@ -26,6 +26,7 @@ bitflags! {
     /// # MSDN
     ///
     /// * [RDP Negotiation Request (RDP_NEG_REQ)](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/902b090b-9cb3-4efc-92bf-ee13373371e3)
+    #[derive(Default)]
     pub struct SecurityProtocol: u32 {
         const RDP = 0;
         const SSL = 1;

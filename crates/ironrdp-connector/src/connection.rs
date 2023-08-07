@@ -247,7 +247,7 @@ impl ClientConnector {
 }
 
 impl Sequence for ClientConnector {
-    fn next_pdu_hint(&self) -> Option<&dyn PduHint> {
+    fn next_pdu_hint(&self) -> Option<&(dyn PduHint + Send + Sync)> {
         match &self.state {
             ClientConnectorState::Consumed => None,
             ClientConnectorState::ConnectionInitiationSendRequest => None,

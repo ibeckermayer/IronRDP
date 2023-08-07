@@ -36,3 +36,18 @@ macro_rules! custom_err {
         <$crate::SessionError as $crate::SessionErrorExt>::custom($context, $source)
     }};
 }
+
+/// A helper function to assert that a type implements all traits in a list.
+///
+/// Ripped directly from the
+/// [static_assertions crate v1.1.0](https://docs.rs/static_assertions/1.1.0/src/static_assertions/assert_impl.rs.html#113-121)
+#[macro_export]
+macro_rules! assert_impl_all {
+    ($type:ty: $($trait:path),+ $(,)?) => {
+        const _: fn() = || {
+            // Only callable when `$type` implements all traits in `$($trait)+`.
+            fn assert_impl_all<T: ?Sized $(+ $trait)+>() {}
+            assert_impl_all::<$type>();
+        };
+    };
+}

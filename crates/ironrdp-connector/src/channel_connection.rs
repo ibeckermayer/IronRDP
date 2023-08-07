@@ -69,7 +69,7 @@ impl ChannelConnectionSequence {
 }
 
 impl Sequence for ChannelConnectionSequence {
-    fn next_pdu_hint(&self) -> Option<&dyn PduHint> {
+    fn next_pdu_hint(&self) -> Option<&(dyn PduHint + Send + Sync)> {
         match self.state {
             ChannelConnectionState::Consumed => None,
             ChannelConnectionState::SendErectDomainRequest => None,

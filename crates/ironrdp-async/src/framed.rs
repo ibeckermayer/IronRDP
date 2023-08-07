@@ -11,14 +11,17 @@ pub trait FramedRead {
     fn read<'a>(
         &'a mut self,
         buf: &'a mut BytesMut,
-    ) -> Pin<Box<dyn std::future::Future<Output = io::Result<usize>> + 'a>>
+    ) -> Pin<Box<dyn std::future::Future<Output = io::Result<usize>> + Send + 'a>>
     where
         Self: 'a;
 }
 
 pub trait FramedWrite {
     /// Writes an entire buffer into this stream.
-    fn write_all<'a>(&'a mut self, buf: &'a [u8]) -> Pin<Box<dyn std::future::Future<Output = io::Result<()>> + 'a>>
+    fn write_all<'a>(
+        &'a mut self,
+        buf: &'a [u8],
+    ) -> Pin<Box<dyn std::future::Future<Output = io::Result<()>> + Send + 'a>>
     where
         Self: 'a;
 }
@@ -124,7 +127,7 @@ where
         }
     }
 
-    pub async fn read_by_hint(&mut self, hint: &dyn PduHint) -> io::Result<Bytes> {
+    pub async fn read_by_hint(&mut self, hint: &(dyn PduHint + Send + Sync)) -> io::Result<Bytes> {
         loop {
             match hint
                 .find_size(self.peek())

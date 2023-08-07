@@ -65,7 +65,7 @@ impl LicenseExchangeSequence {
 }
 
 impl Sequence for LicenseExchangeSequence {
-    fn next_pdu_hint(&self) -> Option<&dyn PduHint> {
+    fn next_pdu_hint(&self) -> Option<&(dyn PduHint + Send + Sync)> {
         match self.state {
             LicenseExchangeState::Consumed => None,
             LicenseExchangeState::NewLicenseRequest => Some(&ironrdp_pdu::X224_HINT),

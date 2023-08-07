@@ -24,8 +24,10 @@ pub struct Processor {
     io_channel_id: u16,
     drdynvc_channel_id: Option<u16>,
     graphics_config: Option<GraphicsConfig>,
-    graphics_handler: Option<Box<dyn GfxHandler + Send>>,
+    graphics_handler: Option<Box<dyn GfxHandler + Send + Sync>>,
 }
+
+assert_impl_all!(Processor: Send, Sync);
 
 impl Processor {
     pub fn new(
@@ -33,7 +35,7 @@ impl Processor {
         user_channel_id: u16,
         io_channel_id: u16,
         graphics_config: Option<GraphicsConfig>,
-        graphics_handler: Option<Box<dyn GfxHandler + Send>>,
+        graphics_handler: Option<Box<dyn GfxHandler + Send + Sync>>,
     ) -> Self {
         let drdynvc_channel_id = static_channels.iter().find_map(|(id, name)| {
             if name == vc::DRDYNVC_CHANNEL_NAME {
@@ -287,7 +289,7 @@ fn create_dvc(
     channel_name: &str,
     channel_id: u32,
     channel_id_type: FieldType,
-    graphics_handler: &mut Option<Box<dyn GfxHandler + Send>>,
+    graphics_handler: &mut Option<Box<dyn GfxHandler + Send + Sync>>,
 ) -> Option<DynamicChannel> {
     match channel_name {
         RDP8_GRAPHICS_PIPELINE_NAME => {
@@ -342,11 +344,15 @@ pub struct DynamicChannel {
     data: CompleteData,
     channel_id_type: FieldType,
     channel_id: u32,
-    handler: Box<dyn DynamicChannelDataHandler + Send>,
+    handler: Box<dyn DynamicChannelDataHandler + Send + Sync>,
 }
 
 impl DynamicChannel {
-    fn new(handler: Box<dyn DynamicChannelDataHandler + Send>, channel_id: u32, channel_id_type: FieldType) -> Self {
+    fn new(
+        handler: Box<dyn DynamicChannelDataHandler + Send + Sync>,
+        channel_id: u32,
+        channel_id_type: FieldType,
+    ) -> Self {
         Self {
             data: CompleteData::new(),
             handler,

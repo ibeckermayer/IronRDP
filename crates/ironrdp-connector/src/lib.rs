@@ -134,7 +134,7 @@ impl Written {
 }
 
 pub trait Sequence: Send + Sync {
-    fn next_pdu_hint(&self) -> Option<&dyn PduHint>;
+    fn next_pdu_hint(&self) -> Option<&(dyn PduHint + Send + Sync)>;
 
     fn state(&self) -> &dyn State;
 

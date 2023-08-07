@@ -65,7 +65,7 @@ impl ConnectionFinalizationSequence {
 }
 
 impl Sequence for ConnectionFinalizationSequence {
-    fn next_pdu_hint(&self) -> Option<&dyn PduHint> {
+    fn next_pdu_hint(&self) -> Option<&(dyn PduHint + Send + Sync)> {
         match self.state {
             ConnectionFinalizationState::Consumed => None,
             ConnectionFinalizationState::SendSynchronize => None,

@@ -12,7 +12,10 @@ pub struct ActiveStage {
 }
 
 impl ActiveStage {
-    pub fn new(connection_result: ConnectionResult, graphics_handler: Option<Box<dyn GfxHandler + Send>>) -> Self {
+    pub fn new(
+        connection_result: ConnectionResult,
+        graphics_handler: Option<Box<dyn GfxHandler + Send + Sync>>,
+    ) -> Self {
         let x224_processor = x224::Processor::new(
             utils::swap_hashmap_kv(connection_result.static_channels),
             connection_result.user_channel_id,

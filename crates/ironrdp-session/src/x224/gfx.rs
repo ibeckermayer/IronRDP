@@ -19,11 +19,11 @@ pub struct Handler {
     decompressor: zgfx::Decompressor,
     decompressed_buffer: Vec<u8>,
     frames_decoded: u32,
-    gfx_handler: Option<Box<dyn GfxHandler + Send>>,
+    gfx_handler: Option<Box<dyn GfxHandler + Send + Sync>>,
 }
 
 impl Handler {
-    pub fn new(gfx_handler: Option<Box<dyn GfxHandler + Send>>) -> Self {
+    pub fn new(gfx_handler: Option<Box<dyn GfxHandler + Send + Sync>>) -> Self {
         Self {
             decompressor: zgfx::Decompressor::new(),
             decompressed_buffer: Vec::with_capacity(1024 * 16),

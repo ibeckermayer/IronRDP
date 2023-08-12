@@ -31,7 +31,7 @@ impl Rdpdr {
 
     fn handle_server_announce(&mut self, payload: &mut ReadCursor<'_>, output: &mut WriteBuf) -> PduResult<()> {
         let request = ServerAnnounceRequest::decode(payload)?;
-        trace!("rdpdr channel received server announce request: {:?}", request);
+        trace!("{:?}", request);
         // TODO: send client announce reply
         Ok(())
     }
@@ -50,7 +50,7 @@ impl StaticVirtualChannel for Rdpdr {
         let mut payload = ReadCursor::new(payload);
 
         let header = SharedHeader::decode(&mut payload)?;
-        trace!("rdpdr channel received data with header: {:?}", header);
+        trace!("{:?}", header);
 
         if let Component::RDPDR_CTYP_PRN = header.component {
             warn!(
@@ -63,12 +63,12 @@ impl StaticVirtualChannel for Rdpdr {
         match header.packet_id {
             PacketId::PAKID_CORE_SERVER_ANNOUNCE => self.handle_server_announce(&mut payload, output)?,
             _ => {
-                warn!("received unimplemented RDPDR packet: {:?}", header.packet_id);
+                warn!("received unimplemented packet: {:?}", header.packet_id);
                 return Ok(());
             }
         }
 
-        warn!("rdpdr channel received data, protocol is unimplemented");
+        warn!("received data, protocol is unimplemented");
         Ok(())
     }
 }

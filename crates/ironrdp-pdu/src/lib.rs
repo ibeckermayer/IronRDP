@@ -7,9 +7,12 @@ use crate::cursor::ReadCursor;
 
 #[macro_use]
 mod macros;
+#[macro_use]
+extern crate num_derive;
 
 pub mod codecs;
 pub mod cursor;
+pub mod efs;
 pub mod gcc;
 pub mod geometry;
 pub mod input;

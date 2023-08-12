@@ -1,4 +1,4 @@
-use crate::PduResult;
+use crate::{write_buf::WriteBuf, PduResult};
 
 #[derive(Debug)]
 pub struct ReadCursor<'a> {

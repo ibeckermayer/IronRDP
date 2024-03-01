@@ -2,6 +2,7 @@ use std::mem;
 use std::net::SocketAddr;
 
 use ironrdp_pdu::rdp::capability_sets::CapabilitySet;
+use ironrdp_pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
 use ironrdp_pdu::write_buf::WriteBuf;
 use ironrdp_pdu::{gcc, mcs, nego, rdp, PduHint};
 use ironrdp_svc::{StaticChannelSet, StaticVirtualChannel, SvcClientProcessor};
@@ -376,11 +377,21 @@ impl Sequence for ClientConnector {
                     self.static_channels.attach_channel_id(channel, channel_id);
                 });
 
+                let skip_channel_join = server_gcc_blocks
+                    .core
+                    .optional_data
+                    .early_capability_flags
+                    .is_some_and(|c| c.contains(gcc::ServerEarlyCapabilityFlags::SKIP_CHANNELJOIN_SUPPORTED));
+
                 (
                     Written::Nothing,
                     ClientConnectorState::ChannelConnection {
                         io_channel_id,
-                        channel_connection: ChannelConnectionSequence::new(io_channel_id, static_channel_ids),
+                        channel_connection: if skip_channel_join {
+                            ChannelConnectionSequence::skip_channel_join()
+                        } else {
+                            ChannelConnectionSequence::new(io_channel_id, static_channel_ids)
+                        },
                     },
                 )
             }
@@ -676,7 +687,8 @@ fn create_gcc_blocks<'a>(
                 early_capability_flags: {
                     let mut early_capability_flags = ClientEarlyCapabilityFlags::VALID_CONNECTION_TYPE
                         | ClientEarlyCapabilityFlags::SUPPORT_ERR_INFO_PDU
-                        | ClientEarlyCapabilityFlags::STRONG_ASYMMETRIC_KEYS;
+                        | ClientEarlyCapabilityFlags::STRONG_ASYMMETRIC_KEYS
+                        | ClientEarlyCapabilityFlags::SUPPORT_SKIP_CHANNELJOIN;
 
                     // TODO(#136): support for ClientEarlyCapabilityFlags::SUPPORT_STATUS_INFO_PDU
 
@@ -767,7 +779,23 @@ fn create_client_info_pdu(config: &Config, routing_addr: &SocketAddr) -> rdp::Cl
             },
             address: routing_addr.ip().to_string(),
             dir: config.client_dir.clone(),
-            optional_data: ExtendedClientOptionalInfo::default(),
+            optional_data: ExtendedClientOptionalInfo::builder()
+                .timezone(TimezoneInfo {
+                    bias: 0,
+                    standard_name: String::new(),
+                    standard_date: None,
+                    standard_bias: 0,
+                    daylight_name: String::new(),
+                    daylight_date: None,
+                    daylight_bias: 0,
+                })
+                .session_id(0)
+                .performance_flags(
+                    PerformanceFlags::DISABLE_FULLWINDOWDRAG
+                        | PerformanceFlags::DISABLE_MENUANIMATIONS
+                        | PerformanceFlags::ENABLE_FONT_SMOOTHING,
+                )
+                .build(),
         },
     };
 
